@@ -1,6 +1,9 @@
 
-var mousex=100,mousey=100,fmousex=-100,fmousey=-100
-var draw_mouse=false;if_ctrl=false;inbtn_line=false;
+var NOTINIT = -100
+var mousex=100,mousey=100,fmousex=NOTINIT,fmousey=NOTINIT,fcmousex=NOTINIT,fcmousey=NOTINIT
+var if_ctrl=false;inbtn_line=false;ifline=false;
+var paint_method='none',mousestatus='up'
+var paint_blank_r = 20
 
 
 function move(ev) {
@@ -8,6 +11,7 @@ function move(ev) {
 	// console.log(ev);
 	mousex = ev.offsetX;
 	mousey = ev.offsetY;
+
 	if (if_in_square(mousex,mousey,1300,100,1350,150)) {
 		// console.log('hi')
 		draw_button_shade(1300,100)
@@ -21,15 +25,38 @@ function move(ev) {
 		}
 	}
 
-	if (draw_mouse==false) {return;}
+	switch(paint_method) {
+		case 'none':
+			break;
+		case 'paint_mouse':
+			paint_mouse()
+			break;
+		case 'paint_line':
 
-	if (fmousex==-100) {
-		fmousex=mousex;
-		fmousey = mousey
-		return;
+			// paint_line()
+			break;
+		case 'paint_blank':
+			console.log(fmousex,fmousey)
+			ifin = if_in_square(mousex,mousey,1425-paint_blank_r,680-paint_blank_r,paint_blank_r,paint_blank_r)
+			if (ifin) {break;}
+			if (mousestatus=='down') {
+				paint_blank(fmousex,fmousey,1)
+				paint_blank(mousex,mousey)
+			}
+			break;
+	}
+	fmousex = mousex;
+	fmousey = mousey;	
+}
+
+function paint_mouse() {
+	
+	if (fmousex==NOTINIT) {
+		fmousex = mousex;
+		fmousey = mousey;
 	}
 	if (mousex>=1240||mousex<=10||mousey<=10||mousey>=670||fmousex>=1240||fmousex<=10||fmousey<=10||fmousey>=670){
-		fmousex = -100
+		fmousex = NOTINIT
 		return;
 	}
 
@@ -46,36 +73,95 @@ function move(ev) {
 	fmousey = mousey
 }
 
-function mousedown(ev) {
-	if (if_in_square(mousex,mousey,10,10,1270,640)){
-		draw_mouse = true;	
+function paint_line() {
+	if (fcmousey==NOTINIT) {fcmousex=mousex;fcmousey=mousey}
+	else {
+		var canvas = document.getElementById('main');
+		var c = canvas.getContext("2d");
+		c.beginPath();
+
+		c.moveTo(fcmousex,fcmousey);
+		c.lineTo(mousex,mousey);
+		c.closePath();
+		c.lineWidth = 2;
+		c.stroke();
+		fcmousex = NOTINIT
+		fcmousey = NOTINIT
 	}
-	else if (inbtn_line) {
+}
+
+function paint_blank(x,y,type=0) {
+	//1 no border
+	var canvas = document.getElementById('main');
+	var c = canvas.getContext("2d");
+	c.beginPath()
+	c.lineWidth = 2;
+	if (type==1) {
+		c.arc(x,y,paint_blank_r+2,0,2*Math.PI);
+		c.fillStyle = '#dedede';
+		c.fill();
+	}
+	else{
+		c.arc(x,y,paint_blank_r,0,2*Math.PI);
+		c.fillStyle = '#dedede';
+		c.fill();
+
+		c.stroke();
+	}
+	
+}
+
+function mousedown(ev) {
+	mousestatus = 'down';
+	// if (if_in_square(mousex,mousey,10,10,1270,640)){
+	// 	paint_method = 'paint_mouse';	
+	// }
+		if (inbtn_line) {
 		draw_button_shade(1300,100,'#dddddd')
+	}
+	switch(paint_method){
+		case 'paint_line':
+			paint_line()
+			break;
+		case 'paint_blank':
+			paint_blank(mousex,mousey)
+			break;
 	}
 }
 
 function mouseup(ev) {
-	draw_mouse = false;
-	fmousex = -100
+	mousestatus = 'up';
+	switch(paint_method){
+		case 'paint_blank':
+			paint_blank(mousex,mousey,1)
+			break;
+	}
+	fmousex = NOTINIT;
 }
 
 function keydown(ev) {
 	var c = ev.keyCode;
-	console.log(ev)
+	// console.log(ev)
 	switch(c){
 
 	case 39:
 	case 68://d
-		draw_mouse = !draw_mouse
-		fmousex = -100
+		if (paint_method=='none') {paint_method = 'paint_mouse'}
+		else {paint_method = 'none'}
+		fmousex = NOTINIT
+		break;
+	case 70://f
+		paint_method = 'paint_line';
+		break;
+	case 69://e
+		paint_method = 'paint_blank';
 		break;
 	case 91://command
 		if_ctrl = true;
 		break;
 	case 67:
 		if (if_ctrl==true) {clear_canvas();}
-		break;	
+		break;
 	}
 }
 
@@ -95,7 +181,7 @@ function clear_canvas() {
 	var result = confirm('clear?');
 	if (!result) {return;}
 	c.clearRect(11,11,1228,658);
-	draw_mouse = false;
+	
 }
 
 function clear_button(x,y) {
@@ -153,7 +239,7 @@ function draw_button_border(x,y) {
 
 
 function draw_button_shade(x,y,colour='#ffffff') {
-	console.log(x,y)
+	// console.log(x,y)
 	var canvas = document.getElementById('main');
 	var c = canvas.getContext("2d");
 	
@@ -163,6 +249,7 @@ function draw_button_shade(x,y,colour='#ffffff') {
 }
 draw_canvas_border()
 draw_button_line(1300,100)
+
 
 
 
